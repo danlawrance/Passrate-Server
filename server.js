@@ -4,7 +4,6 @@ const fetch   = require('node-fetch');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
-
 app.use(cors());
 app.use(express.json());
 
@@ -12,13 +11,9 @@ const OANDA_BASE = 'https://api-fxpractice.oanda.com';
 
 app.get('/api/pricing', async (req, res) => {
   const { apiKey, accountId, instruments } = req.query;
-  if (!apiKey || !accountId || !instruments)
-    return res.status(400).json({ error: 'Missing params' });
+  if (!apiKey || !accountId || !instruments) return res.status(400).json({ error: 'Missing params' });
   try {
-    const r = await fetch(
-      `${OANDA_BASE}/v3/accounts/${accountId}/pricing?instruments=${instruments}`,
-      { headers: { Authorization: `Bearer ${apiKey}` } }
-    );
+    const r = await fetch(`${OANDA_BASE}/v3/accounts/${accountId}/pricing?instruments=${instruments}`, { headers: { Authorization: `Bearer ${apiKey}` } });
     const d = await r.json();
     if (!r.ok) return res.status(r.status).json(d);
     res.json(d);
@@ -27,13 +22,9 @@ app.get('/api/pricing', async (req, res) => {
 
 app.get('/api/candles', async (req, res) => {
   const { apiKey, instrument, granularity, count } = req.query;
-  if (!apiKey || !instrument)
-    return res.status(400).json({ error: 'Missing params' });
+  if (!apiKey || !instrument) return res.status(400).json({ error: 'Missing params' });
   try {
-    const r = await fetch(
-      `${OANDA_BASE}/v3/instruments/${instrument}/candles?granularity=${granularity||'M5'}&count=${count||100}`,
-      { headers: { Authorization: `Bearer ${apiKey}` } }
-    );
+    const r = await fetch(`${OANDA_BASE}/v3/instruments/${instrument}/candles?granularity=${granularity||'M5'}&count=${count||100}`, { headers: { Authorization: `Bearer ${apiKey}` } });
     const d = await r.json();
     if (!r.ok) return res.status(r.status).json(d);
     res.json(d);
@@ -42,13 +33,9 @@ app.get('/api/candles', async (req, res) => {
 
 app.get('/api/account', async (req, res) => {
   const { apiKey, accountId } = req.query;
-  if (!apiKey || !accountId)
-    return res.status(400).json({ error: 'Missing params' });
+  if (!apiKey || !accountId) return res.status(400).json({ error: 'Missing params' });
   try {
-    const r = await fetch(
-      `${OANDA_BASE}/v3/accounts/${accountId}/summary`,
-      { headers: { Authorization: `Bearer ${apiKey}` } }
-    );
+    const r = await fetch(`${OANDA_BASE}/v3/accounts/${accountId}/summary`, { headers: { Authorization: `Bearer ${apiKey}` } });
     const d = await r.json();
     if (!r.ok) return res.status(r.status).json(d);
     res.json(d);
@@ -296,7 +283,93 @@ body {
 .rule-sub { font-size: 10px; color: var(--muted2); }
 
 /* ── MAIN LAYOUT ── */
-.main { display: grid; grid-template-columns: 1fr 320px; height: calc(100vh - 113px); overflow: hidden; }
+.main { display: grid; grid-template-columns: 200px 1fr 300px; height: calc(100vh - 113px); overflow: hidden; }
+
+/* ── WATCHLIST ── */
+.watchlist {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg2);
+}
+.watchlist-header {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.watchlist-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+.watchlist-body {
+  overflow-y: auto;
+  flex: 1;
+}
+.watchlist-body::-webkit-scrollbar { width: 3px; }
+.watchlist-body::-webkit-scrollbar-track { background: transparent; }
+.watchlist-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.wl-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--muted2);
+  padding: 8px 10px 4px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.wl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: background 0.1s;
+  gap: 4px;
+}
+.wl-row:hover { background: var(--bg3); }
+.wl-row.active { background: var(--green-d); }
+.wl-row.active .wl-pair { color: var(--green-l); }
+.wl-pair {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.wl-prices {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.wl-price {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+}
+.wl-change {
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+}
+.wl-change.up   { color: var(--green); }
+.wl-change.down { color: var(--red); }
+.wl-change.flat { color: var(--muted2); }
 
 /* ── CHART PANEL ── */
 .chart-panel {
@@ -388,6 +461,70 @@ body {
   overflow: hidden;
   min-height: 0;
 }
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+.ctrl-btn {
+  padding: 4px 9px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: none;
+  color: var(--muted);
+  font-family: var(--sans);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.ctrl-btn:hover { color: var(--text); border-color: var(--border2); }
+.ctrl-btn.active { background: var(--green-d); color: var(--green-l); border-color: var(--green); }
+.ctrl-btn svg { flex-shrink: 0; }
+
+/* Fullscreen chart overlay */
+#chart-fullscreen {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  z-index: 500;
+  flex-direction: column;
+}
+#chart-fullscreen.active { display: flex; }
+#fs-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+  gap: 12px;
+}
+#fs-chart-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+}
+#fs-priceChart {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+#fs-draw-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}
+#fs-draw-canvas.drawing { pointer-events: all; cursor: crosshair; }
 
 #drawCanvas {
   position: absolute;
@@ -678,6 +815,7 @@ body {
 @media (max-width: 800px) {
   .rules-bar { grid-template-columns: repeat(3, 1fr); }
   .main { grid-template-columns: 1fr; }
+  .watchlist { display: none; }
   .trade-panel { display: none; }
 }
 </style>
@@ -818,6 +956,16 @@ body {
   <!-- Main -->
   <div class="main">
 
+    <!-- Watchlist -->
+    <div class="watchlist">
+      <div class="watchlist-header">
+        <span class="watchlist-title">Watchlist</span>
+      </div>
+      <div class="watchlist-body" id="watchlistBody">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
     <!-- Chart panel -->
     <div class="chart-panel">
       <div class="chart-toolbar">
@@ -857,14 +1005,30 @@ body {
             <div class="current-price" id="currentPrice">—</div>
             <div class="price-change" id="priceChange"></div>
           </div>
-          <div style="display:flex;gap:4px;">
-            <button class="tf-btn active" onclick="switchTimeframe('M1',this)">M1</button>
-            <button class="tf-btn" onclick="switchTimeframe('M5',this)">M5</button>
-            <button class="tf-btn" onclick="switchTimeframe('M15',this)">M15</button>
-            <button class="tf-btn" onclick="switchTimeframe('M30',this)">M30</button>
-            <button class="tf-btn" onclick="switchTimeframe('H1',this)">H1</button>
-            <button class="tf-btn" onclick="switchTimeframe('H4',this)">H4</button>
-            <button class="tf-btn" onclick="switchTimeframe('D',this)">D</button>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <div style="display:flex;gap:4px;">
+              <button class="tf-btn active" onclick="switchTimeframe('M1',this)">M1</button>
+              <button class="tf-btn" onclick="switchTimeframe('M5',this)">M5</button>
+              <button class="tf-btn" onclick="switchTimeframe('M15',this)">M15</button>
+              <button class="tf-btn" onclick="switchTimeframe('M30',this)">M30</button>
+              <button class="tf-btn" onclick="switchTimeframe('H1',this)">H1</button>
+              <button class="tf-btn" onclick="switchTimeframe('H4',this)">H4</button>
+              <button class="tf-btn" onclick="switchTimeframe('D',this)">D</button>
+            </div>
+            <div class="chart-controls">
+              <button class="ctrl-btn active" id="btn-autofit" onclick="toggleAutofit()" title="Auto-fit candles to screen">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="7" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.3"/><line x1="5" y1="3" x2="7" y2="3" stroke="currentColor" stroke-width="1.1"/><line x1="9" y1="5" x2="9" y2="7" stroke="currentColor" stroke-width="1.1"/></svg>
+                Auto-fit
+              </button>
+              <button class="ctrl-btn" id="btn-fitonce" onclick="fitNow()" title="Fit all data to screen now">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="1,4 1,1 4,1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="8,1 11,1 11,4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="11,8 11,11 8,11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="4,11 1,11 1,8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Fit now
+              </button>
+              <button class="ctrl-btn" id="btn-fullscreen" onclick="openFullscreen()" title="Fullscreen chart">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="1,4 1,1 4,1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="8,1 11,1 11,4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="11,8 11,11 8,11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="4,11 1,11 1,8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Fullscreen
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -983,6 +1147,45 @@ body {
   </div>
 </div>
 
+<!-- Fullscreen chart overlay -->
+<div id="chart-fullscreen">
+  <div id="fs-toolbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-size:14px;font-weight:700;color:var(--text);" id="fs-pair-label">EUR/USD</div>
+      <div style="display:flex;gap:4px;" id="fs-tf-btns">
+        <button class="tf-btn active" onclick="fsSwitchTF('M1',this)">M1</button>
+        <button class="tf-btn" onclick="fsSwitchTF('M5',this)">M5</button>
+        <button class="tf-btn" onclick="fsSwitchTF('M15',this)">M15</button>
+        <button class="tf-btn" onclick="fsSwitchTF('M30',this)">M30</button>
+        <button class="tf-btn" onclick="fsSwitchTF('H1',this)">H1</button>
+        <button class="tf-btn" onclick="fsSwitchTF('H4',this)">H4</button>
+        <button class="tf-btn" onclick="fsSwitchTF('D',this)">D</button>
+      </div>
+      <div class="chart-controls">
+        <button class="ctrl-btn active" id="fs-btn-autofit" onclick="toggleFsAutofit()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="7" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.3"/></svg>
+          Auto-fit
+        </button>
+        <button class="ctrl-btn" onclick="if(fsChart) fsChart.timeScale().fitContent()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="1,4 1,1 4,1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="8,1 11,1 11,4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="11,8 11,11 8,11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="4,11 1,11 1,8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Fit now
+        </button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-family:var(--mono);font-size:18px;font-weight:600;" id="fs-price">—</div>
+      <button class="ctrl-btn" onclick="closeFullscreen()" style="color:var(--red-l);border-color:var(--red-l);">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Close
+      </button>
+    </div>
+  </div>
+  <div id="fs-chart-wrap">
+    <div id="fs-priceChart"></div>
+    <canvas id="fs-draw-canvas"></canvas>
+  </div>
+</div>
+
 <!-- Breach alert -->
 <div class="breach-alert" id="breachAlert">
   <div class="breach-card">
@@ -1073,27 +1276,29 @@ function getSpread(pair) {
 }
 
 const SEED_PRICES = {
-  EUR_USD: 1.0842, GBP_USD: 1.2731, USD_JPY: 149.54,
-  AUD_USD: 0.6512, USD_CAD: 1.3621, EUR_GBP: 0.8512,
-  GBP_JPY: 190.24, EUR_JPY: 162.18, USD_CHF: 0.9012,
-  NZD_USD: 0.5982, AUD_JPY: 97.42,  EUR_AUD: 1.6634,
-  XAU_USD: 2342.50, XAG_USD: 27.85,
-  SPX500_USD: 5248.0, NAS100_USD: 18320.0, UK100_GBP: 8142.0,
-  DE30_EUR: 18320.0, JP225_USD: 38540.0, US30_USD: 38920.0
+  EUR_USD:1.0842,  GBP_USD:1.2731,  USD_JPY:149.54,  AUD_USD:0.6512,  USD_CAD:1.3621,
+  EUR_GBP:0.8512,  GBP_JPY:190.24,  EUR_JPY:162.18,  USD_CHF:0.9012,  NZD_USD:0.5982,
+  AUD_JPY:97.42,   EUR_AUD:1.6634,  EUR_CAD:1.4821,  EUR_CHF:0.9612,  GBP_AUD:1.9234,
+  GBP_CAD:1.7312,  GBP_CHF:1.1234,  AUD_CAD:0.8912,  AUD_CHF:0.5812,  AUD_NZD:1.0934,
+  XAU_USD:2342.50, XAG_USD:27.85,
+  SPX500_USD:5248.0, NAS100_USD:18320.0, UK100_GBP:8142.0,
+  DE30_EUR:18320.0,  JP225_USD:38540.0,  US30_USD:38920.0
 };
 
 const PIP_SIZE = {
   EUR_USD:0.0001, GBP_USD:0.0001, USD_JPY:0.01,  AUD_USD:0.0001, USD_CAD:0.0001,
-  EUR_GBP:0.0001, GBP_JPY:0.01,   EUR_JPY:0.01,  USD_CHF:0.0001, NZD_USD:0.0001,
-  AUD_JPY:0.01,   EUR_AUD:0.0001,
-  XAU_USD:0.01,   XAG_USD:0.001,
+  EUR_GBP:0.0001, GBP_JPY:0.01,  EUR_JPY:0.01,  USD_CHF:0.0001, NZD_USD:0.0001,
+  AUD_JPY:0.01,   EUR_AUD:0.0001, EUR_CAD:0.0001, EUR_CHF:0.0001, GBP_AUD:0.0001,
+  GBP_CAD:0.0001, GBP_CHF:0.0001, AUD_CAD:0.0001, AUD_CHF:0.0001, AUD_NZD:0.0001,
+  XAU_USD:0.01,  XAG_USD:0.001,
   SPX500_USD:0.1, NAS100_USD:0.1, UK100_GBP:0.1,
   DE30_EUR:0.1,   JP225_USD:0.1,  US30_USD:0.1
 };
 const PIP_VALUE = {
-  EUR_USD:10,  GBP_USD:10,   USD_JPY:6.68,  AUD_USD:10,   USD_CAD:7.33,
-  EUR_GBP:12,  GBP_JPY:6.68, EUR_JPY:6.68,  USD_CHF:11,   NZD_USD:10,
-  AUD_JPY:6.68,EUR_AUD:10,
+  EUR_USD:10,  GBP_USD:10,  USD_JPY:6.68,  AUD_USD:10,  USD_CAD:7.33,
+  EUR_GBP:12,  GBP_JPY:6.68, EUR_JPY:6.68, USD_CHF:11,  NZD_USD:10,
+  AUD_JPY:6.68, EUR_AUD:10,  EUR_CAD:7.33,  EUR_CHF:11,  GBP_AUD:10,
+  GBP_CAD:7.33, GBP_CHF:11,  AUD_CAD:7.33,  AUD_CHF:11,  AUD_NZD:10,
   XAU_USD:1,   XAG_USD:5,
   SPX500_USD:1, NAS100_USD:1, UK100_GBP:1,
   DE30_EUR:1,   JP225_USD:1,  US30_USD:1
@@ -1143,6 +1348,8 @@ function startSimulation() {
   updateSessionInfo();
   initChart();
   initPrices();
+  renderWatchlist();
+  initWatchlistPrices();
   setTimeout(() => { initDrawing(); attachChartDrawingSync(); }, 500);
 }
 
@@ -1219,6 +1426,8 @@ async function initPrices() {
     await refreshPrice(state.currentPair);
     updateOpenPositionsPnl();
     updateRulesBar();
+    updateWatchlistPrices();
+    if (document.getElementById('chart-fullscreen').classList.contains('active')) updateFsChart();
   }, state.connected ? 2000 : 1500);
 }
 
@@ -1376,7 +1585,7 @@ async function loadCandles() {
       color: c.close >= c.open ? 'rgba(29,158,117,0.4)' : 'rgba(226,75,74,0.3)',
     })));
   }
-  if (chart) chart.timeScale().fitContent();
+  if (chart && autofitEnabled) chart.timeScale().fitContent();
 
   // Store last candle for live tick updates
   state.lastCandle = candles[candles.length - 1];
@@ -1685,6 +1894,8 @@ function retrySimulation() {
     await refreshPrice(state.currentPair);
     updateOpenPositionsPnl();
     updateRulesBar();
+    updateWatchlistPrices();
+    if (document.getElementById('chart-fullscreen').classList.contains('active')) updateFsChart();
   }, state.connected ? 2000 : 1500);
 }
 
@@ -1694,6 +1905,148 @@ function resetSimulation() {
   document.getElementById('setup-screen').style.display = 'flex';
   document.getElementById('breachAlert').classList.remove('show');
   document.getElementById('passAlert').classList.remove('show');
+}
+
+
+// ════════════════════════════════════════════════════
+// WATCHLIST
+// ════════════════════════════════════════════════════
+const WATCHLIST_GROUPS = [
+  {
+    label: 'USD',
+    pairs: ['USD_CAD','USD_CHF','USD_JPY']
+  },
+  {
+    label: 'EUR',
+    pairs: ['EUR_USD','EUR_AUD','EUR_CAD','EUR_CHF','EUR_GBP','EUR_JPY']
+  },
+  {
+    label: 'GBP',
+    pairs: ['GBP_USD','GBP_AUD','GBP_CAD','GBP_CHF','GBP_JPY']
+  },
+  {
+    label: 'AUD',
+    pairs: ['AUD_USD','AUD_CAD','AUD_CHF','AUD_JPY','AUD_NZD']
+  },
+  {
+    label: 'Metals',
+    pairs: ['XAU_USD','XAG_USD']
+  },
+  {
+    label: 'Indices',
+    pairs: ['SPX500_USD','NAS100_USD','UK100_GBP','DE30_EUR','JP225_USD','US30_USD']
+  }
+];
+
+// Friendly display names
+const PAIR_DISPLAY = {
+  USD_CAD:'USD/CAD', USD_CHF:'USD/CHF', USD_JPY:'USD/JPY',
+  EUR_USD:'EUR/USD', EUR_AUD:'EUR/AUD', EUR_CAD:'EUR/CAD',
+  EUR_CHF:'EUR/CHF', EUR_GBP:'EUR/GBP', EUR_JPY:'EUR/JPY',
+  GBP_USD:'GBP/USD', GBP_AUD:'GBP/AUD', GBP_CAD:'GBP/CAD',
+  GBP_CHF:'GBP/CHF', GBP_JPY:'GBP/JPY',
+  AUD_USD:'AUD/USD', AUD_CAD:'AUD/CAD', AUD_CHF:'AUD/CHF',
+  AUD_JPY:'AUD/JPY', AUD_NZD:'AUD/NZD',
+  NZD_USD:'NZD/USD',
+  XAU_USD:'XAU/USD', XAG_USD:'XAG/USD',
+  SPX500_USD:'S&P 500', NAS100_USD:'NAS 100', UK100_GBP:'FTSE 100',
+  DE30_EUR:'DAX', JP225_USD:'Nikkei', US30_USD:'Dow Jones'
+};
+
+// Track open prices for change calculation
+const wlOpenPrices = {};
+const wlPrevPrices = {};
+
+function renderWatchlist() {
+  const body = document.getElementById('watchlistBody');
+  if (!body) return;
+  let html = '';
+  WATCHLIST_GROUPS.forEach(function(group) {
+    html += '<div class="wl-group-label">' + group.label + '</div>';
+    group.pairs.forEach(function(pair) {
+      const display = PAIR_DISPLAY[pair] || pair.replace('_','/');
+      const isActive = state.currentPair === pair;
+      html += '<div class="wl-row' + (isActive ? ' active' : '') + '" id="wlrow-' + pair + '" onclick="wlSelectPair(\\'' + pair + '\\')">';
+      html += '<span class="wl-pair">' + display + '</span>';
+      html += '<div class="wl-prices"><span class="wl-price" id="wlprice-' + pair + '">—</span>';
+      html += '<span class="wl-change flat" id="wlchange-' + pair + '">—</span></div>';
+      html += '</div>';
+    });
+  });
+  body.innerHTML = html;
+  updateWatchlistPrices();
+}
+
+function updateWatchlistPrices() {
+  WATCHLIST_GROUPS.forEach(function(group) {
+    group.pairs.forEach(function(pair) {
+      const p = state.prices[pair];
+      if (!p) return;
+      const mid = (p.bid + p.ask) / 2;
+      const dp  = getDP(pair);
+
+      // Set open price on first tick
+      if (!wlOpenPrices[pair]) wlOpenPrices[pair] = mid;
+
+      const priceEl  = document.getElementById('wlprice-' + pair);
+      const changeEl = document.getElementById('wlchange-' + pair);
+      if (!priceEl || !changeEl) return;
+
+      priceEl.textContent = mid.toFixed(dp);
+
+      const diff = mid - wlOpenPrices[pair];
+      const pips = diff / PIP_SIZE[pair];
+      const isIndex = ['SPX500_USD','NAS100_USD','UK100_GBP','DE30_EUR','JP225_USD','US30_USD'].includes(pair);
+      const sign = diff >= 0 ? '+' : '';
+      if (isIndex) {
+        changeEl.textContent = sign + diff.toFixed(1) + ' pts';
+      } else {
+        changeEl.textContent = sign + pips.toFixed(1) + ' pips';
+      }
+      changeEl.className = 'wl-change ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat');
+
+      // Flash animation on price change
+      if (wlPrevPrices[pair] !== undefined && wlPrevPrices[pair] !== mid) {
+        priceEl.style.color = mid > wlPrevPrices[pair] ? 'var(--green)' : 'var(--red)';
+        setTimeout(function() {
+          if (priceEl) priceEl.style.color = '';
+        }, 400);
+      }
+      wlPrevPrices[pair] = mid;
+    });
+  });
+}
+
+function wlSelectPair(pair) {
+  // Update active row
+  document.querySelectorAll('.wl-row').forEach(function(r) { r.classList.remove('active'); });
+  const row = document.getElementById('wlrow-' + pair);
+  if (row) row.classList.add('active');
+
+  // Switch chart pair
+  state.currentPair = pair;
+  state.priceHistory = [];
+
+  // Update pair buttons in chart toolbar
+  document.querySelectorAll('.pair-btn').forEach(function(b) { b.classList.remove('active'); });
+
+  updatePriceDisplay();
+  loadCandles();
+
+  // Ensure price is being fetched for this pair
+  refreshPrice(pair);
+}
+
+// Pre-fetch prices for all watchlist pairs
+async function initWatchlistPrices() {
+  const allPairs = [];
+  WATCHLIST_GROUPS.forEach(function(g) { g.pairs.forEach(function(p) { allPairs.push(p); }); });
+  // Fetch in batches to avoid rate limiting
+  for (let i = 0; i < allPairs.length; i += 4) {
+    const batch = allPairs.slice(i, i + 4);
+    await Promise.all(batch.map(function(p) { return refreshPrice(p); }));
+    updateWatchlistPrices();
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -2035,6 +2388,211 @@ function drawShape(ctx, d) {
 function attachChartDrawingSync() {
   if (!chart) return;
   chart.timeScale().subscribeVisibleTimeRangeChange(function() { redrawAll(); });
+}
+
+// ── AUTOFIT
+let autofitEnabled = true;
+
+function toggleAutofit() {
+  autofitEnabled = !autofitEnabled;
+  const btn = document.getElementById('btn-autofit');
+  if (btn) btn.classList.toggle('active', autofitEnabled);
+  if (autofitEnabled && chart) chart.timeScale().fitContent();
+}
+
+function fitNow() {
+  if (chart) chart.timeScale().fitContent();
+}
+
+// ── FULLSCREEN CHART
+let fsChart        = null;
+let fsCandleSeries = null;
+let fsVolumeSeries = null;
+let fsAutofit      = true;
+
+function openFullscreen() {
+  const overlay = document.getElementById('chart-fullscreen');
+  overlay.classList.add('active');
+  document.getElementById('fs-pair-label').textContent = state.currentPair.replace('_', '/');
+  document.getElementById('fs-price').textContent = document.getElementById('currentPrice').textContent;
+
+  // Sync active TF button
+  document.querySelectorAll('#fs-tf-btns .tf-btn').forEach(b => b.classList.remove('active'));
+  const tfMap = {'M1':'M1','M5':'M5','M15':'M15','M30':'M30','H1':'H1','H4':'H4','D':'D'};
+  document.querySelectorAll('#fs-tf-btns .tf-btn').forEach(b => {
+    if (b.textContent.trim() === state.timeframe) b.classList.add('active');
+  });
+
+  if (!fsChart) initFsChart();
+  else loadFsCandles();
+
+  // Escape key closes
+  document.addEventListener('keydown', fsEscHandler);
+}
+
+function closeFullscreen() {
+  document.getElementById('chart-fullscreen').classList.remove('active');
+  document.removeEventListener('keydown', fsEscHandler);
+}
+
+function fsEscHandler(e) {
+  if (e.key === 'Escape') closeFullscreen();
+}
+
+function initFsChart() {
+  const container = document.getElementById('fs-priceChart');
+  container.innerHTML = '';
+  fsChart = LightweightCharts.createChart(container, {
+    autoSize: true,
+    layout: {
+      background: { color: '#0a0f0d' },
+      textColor:  '#4a6657',
+    },
+    grid: {
+      vertLines: { color: 'rgba(255,255,255,0.04)' },
+      horzLines: { color: 'rgba(255,255,255,0.04)' },
+    },
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Normal,
+      vertLine: { color: '#1D9E75', labelBackgroundColor: '#085041' },
+      horzLine: { color: '#1D9E75', labelBackgroundColor: '#085041' },
+    },
+    rightPriceScale: { borderColor: 'rgba(255,255,255,0.08)', textColor: '#4a6657' },
+    timeScale: {
+      borderColor: 'rgba(255,255,255,0.08)',
+      textColor: '#4a6657',
+      timeVisible: true,
+      secondsVisible: false,
+    },
+    handleScroll: true,
+    handleScale: true,
+  });
+
+  fsCandleSeries = fsChart.addCandlestickSeries({
+    upColor: '#1D9E75', downColor: '#E24B4A',
+    borderUpColor: '#1D9E75', borderDownColor: '#E24B4A',
+    wickUpColor: '#1D9E75', wickDownColor: '#E24B4A',
+    priceFormat: {
+      type: 'price',
+      precision: getDP(state.currentPair),
+      minMove: Math.pow(10, -getDP(state.currentPair)),
+    },
+  });
+
+  fsVolumeSeries = fsChart.addHistogramSeries({
+    priceFormat: { type: 'volume' },
+    priceScaleId: 'fsvol',
+    color: '#1D9E75',
+  });
+  fsChart.priceScale('fsvol').applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+
+  // Crosshair price update
+  fsChart.subscribeCrosshairMove(function(p) {
+    if (p.seriesData && fsCandleSeries && p.seriesData.get(fsCandleSeries)) {
+      var d   = p.seriesData.get(fsCandleSeries);
+      var dp  = getDP(state.currentPair);
+      var el  = document.getElementById('fs-price');
+      if (el) el.textContent = 'O:' + d.open.toFixed(dp) + ' H:' + d.high.toFixed(dp) + ' L:' + d.low.toFixed(dp) + ' C:' + d.close.toFixed(dp);
+    }
+  });
+
+  loadFsCandles();
+}
+
+async function loadFsCandles() {
+  if (!fsCandleSeries) return;
+  // Reuse same candle loading logic
+  var pair  = state.currentPair;
+  var tf    = state.timeframe;
+  var countMap = { M1:200, M5:200, M15:150, M30:150, H1:150, H4:150, D:200 };
+  var count = countMap[tf] || 150;
+  var candles = null;
+
+  if (state.apiKey) {
+    try {
+      var url = getProxyBase() + '/api/candles?apiKey=' + encodeURIComponent(state.apiKey) + '&instrument=' + pair + '&granularity=' + tf + '&count=' + count;
+      var res = await fetch(url);
+      if (res.ok) {
+        var data = await res.json();
+        if (data.candles && data.candles.length > 0) {
+          candles = data.candles
+            .filter(function(c, i) { return c.complete !== false || i === data.candles.length - 1; })
+            .map(function(c) {
+              return {
+                time:   Math.floor(new Date(c.time).getTime() / 1000),
+                open:   parseFloat(c.mid.o),
+                high:   parseFloat(c.mid.h),
+                low:    parseFloat(c.mid.l),
+                close:  parseFloat(c.mid.c),
+                volume: parseInt(c.volume || 100),
+              };
+            });
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (!candles || candles.length === 0) candles = generateSyntheticCandles(pair, tf, count);
+
+  fsCandleSeries.applyOptions({
+    priceFormat: { type: 'price', precision: getDP(pair), minMove: Math.pow(10, -getDP(pair)) }
+  });
+  fsCandleSeries.setData(candles);
+  fsVolumeSeries.setData(candles.map(function(c) {
+    return { time: c.time, value: c.volume, color: c.close >= c.open ? 'rgba(29,158,117,0.4)' : 'rgba(226,75,74,0.3)' };
+  }));
+  if (fsAutofit) fsChart.timeScale().fitContent();
+}
+
+function fsSwitchTF(tf, btn) {
+  state.timeframe = tf;
+  // Sync both sets of TF buttons
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#fs-tf-btns .tf-btn').forEach(b => {
+    if (b.textContent.trim() === tf) b.classList.add('active');
+  });
+  // Also sync main chart TF buttons
+  document.querySelectorAll('.chart-toolbar .tf-btn').forEach(b => {
+    if (b.textContent.trim() === tf) b.classList.add('active');
+  });
+  loadFsCandles();
+  loadCandles(); // keep main chart in sync
+}
+
+function toggleFsAutofit() {
+  fsAutofit = !fsAutofit;
+  var btn = document.getElementById('fs-btn-autofit');
+  if (btn) btn.classList.toggle('active', fsAutofit);
+  if (fsAutofit && fsChart) fsChart.timeScale().fitContent();
+}
+
+// Update FS chart on live price tick
+function updateFsChart() {
+  if (!fsChart || !fsCandleSeries) return;
+  var p = state.prices[state.currentPair];
+  if (!p) return;
+  var mid = (p.bid + p.ask) / 2;
+  var now = Math.floor(Date.now() / 1000);
+  var tfSec = { M1:60, M5:300, M15:900, M30:1800, H1:3600, H4:14400, D:86400 };
+  var interval = tfSec[state.timeframe] || 300;
+  var ct = Math.floor(now / interval) * interval;
+
+  // Update FS last candle same as main
+  if (state.lastCandle) {
+    var lc = ct === state.lastCandle.time
+      ? { time: state.lastCandle.time, open: state.lastCandle.open, high: Math.max(state.lastCandle.high, mid), low: Math.min(state.lastCandle.low, mid), close: mid }
+      : { time: ct, open: mid, high: mid, low: mid, close: mid };
+    try {
+      fsCandleSeries.update(lc);
+      if (fsAutofit) {} // fitContent on new candle only
+    } catch(e) {}
+  }
+
+  // Update live price display
+  var el = document.getElementById('fs-price');
+  if (el && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
+    el.textContent = mid.toFixed(getDP(state.currentPair));
+  }
 }
 
 </script>
