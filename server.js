@@ -384,9 +384,9 @@ body {
 }
 .chart-wrap {
   flex: 1;
-  display: flex;
   position: relative;
   overflow: hidden;
+  min-height: 0;
 }
 
 #drawCanvas {
@@ -440,9 +440,11 @@ body {
 
 .chart-area {
   flex: 1;
-  padding: 16px 20px;
+  padding: 0;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: row;
 }
 
 
@@ -866,7 +868,7 @@ body {
           </div>
         </div>
       </div>
-      <div class="chart-area" style="display:flex;flex-direction:row;padding:0;overflow:hidden;">
+      <div class="chart-area">
         <!-- Drawing toolbar -->
         <div class="draw-toolbar" id="drawToolbar">
           <button class="draw-btn active" id="btn-cursor"  onclick="setTool('cursor')"  title="Select / Pan">&#9654;</button>
@@ -937,7 +939,7 @@ body {
 
         <!-- Chart + canvas overlay -->
         <div class="chart-wrap">
-          <div id="priceChart"></div>
+          <div id="priceChart" style="position:absolute;top:0;left:0;right:0;bottom:0;"></div>
           <canvas id="drawCanvas"></canvas>
           <input type="text" id="textInput" class="text-input-overlay" placeholder="Type label..." onkeydown="commitText(event)"/>
         </div>
@@ -1268,8 +1270,7 @@ function initChart() {
   const container = document.getElementById('priceChart');
   container.innerHTML = '';
   chart = LightweightCharts.createChart(container, {
-    width:  container.clientWidth,
-    height: container.clientHeight,
+    autoSize: true,
     layout: {
       background: { color: '#0a0f0d' },
       textColor:  '#4a6657',
@@ -1318,10 +1319,6 @@ function initChart() {
     scaleMargins: { top: 0.8, bottom: 0 },
   });
   chart.priceScale('volume').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
-
-  window.addEventListener('resize', () => {
-    if (chart) chart.resize(container.clientWidth, container.clientHeight);
-  });
 
   loadCandles();
 }
