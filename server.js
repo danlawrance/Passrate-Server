@@ -10,69 +10,53 @@ app.use(express.json());
 
 const OANDA_BASE = 'https://api-fxpractice.oanda.com';
 
-// ── Proxy: GET pricing
 app.get('/api/pricing', async (req, res) => {
   const { apiKey, accountId, instruments } = req.query;
-  if (!apiKey || !accountId || !instruments) {
-    return res.status(400).json({ error: 'Missing apiKey, accountId or instruments' });
-  }
+  if (!apiKey || !accountId || !instruments)
+    return res.status(400).json({ error: 'Missing params' });
   try {
-    const url = `${OANDA_BASE}/v3/accounts/${accountId}/pricing?instruments=${instruments}`;
-    const oandaRes = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
-    });
-    const data = await oandaRes.json();
-    if (!oandaRes.ok) return res.status(oandaRes.status).json(data);
-    res.json(data);
-  } catch (err) {
-    res.status(502).json({ error: 'OANDA unreachable', detail: err.message });
-  }
+    const r = await fetch(
+      `${OANDA_BASE}/v3/accounts/${accountId}/pricing?instruments=${instruments}`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    );
+    const d = await r.json();
+    if (!r.ok) return res.status(r.status).json(d);
+    res.json(d);
+  } catch(e) { res.status(502).json({ error: e.message }); }
 });
 
-// ── Proxy: GET candles
 app.get('/api/candles', async (req, res) => {
   const { apiKey, instrument, granularity, count } = req.query;
-  if (!apiKey || !instrument) {
-    return res.status(400).json({ error: 'Missing apiKey or instrument' });
-  }
+  if (!apiKey || !instrument)
+    return res.status(400).json({ error: 'Missing params' });
   try {
-    const gran  = granularity || 'M5';
-    const cnt   = count || 100;
-    const url   = `${OANDA_BASE}/v3/instruments/${instrument}/candles?granularity=${gran}&count=${cnt}`;
-    const oandaRes = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
-    });
-    const data = await oandaRes.json();
-    if (!oandaRes.ok) return res.status(oandaRes.status).json(data);
-    res.json(data);
-  } catch (err) {
-    res.status(502).json({ error: 'OANDA unreachable', detail: err.message });
-  }
+    const r = await fetch(
+      `${OANDA_BASE}/v3/instruments/${instrument}/candles?granularity=${granularity||'M5'}&count=${count||100}`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    );
+    const d = await r.json();
+    if (!r.ok) return res.status(r.status).json(d);
+    res.json(d);
+  } catch(e) { res.status(502).json({ error: e.message }); }
 });
 
-// ── Proxy: GET account summary
 app.get('/api/account', async (req, res) => {
   const { apiKey, accountId } = req.query;
-  if (!apiKey || !accountId) {
-    return res.status(400).json({ error: 'Missing apiKey or accountId' });
-  }
+  if (!apiKey || !accountId)
+    return res.status(400).json({ error: 'Missing params' });
   try {
-    const url = `${OANDA_BASE}/v3/accounts/${accountId}/summary`;
-    const oandaRes = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
-    });
-    const data = await oandaRes.json();
-    if (!oandaRes.ok) return res.status(oandaRes.status).json(data);
-    res.json(data);
-  } catch (err) {
-    res.status(502).json({ error: 'OANDA unreachable', detail: err.message });
-  }
+    const r = await fetch(
+      `${OANDA_BASE}/v3/accounts/${accountId}/summary`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    );
+    const d = await r.json();
+    if (!r.ok) return res.status(r.status).json(d);
+    res.json(d);
+  } catch(e) { res.status(502).json({ error: e.message }); }
 });
 
-// ── Health check
 app.get('/health', (_, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
-// ── Serve simulator — embedded directly, no public folder needed
 const SIMULATOR_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -333,6 +317,100 @@ body {
 }
 
 .pair-selector { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.tf-btn {
+  padding: 4px 9px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: none;
+  color: var(--muted);
+  font-family: var(--mono);
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+.tf-btn.active { background: var(--bg3); color: var(--green-l); border-color: var(--green); }
+.tf-btn:hover:not(.active) { color: var(--text); border-color: var(--border2); }
+.draw-toolbar {
+  width: 38px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 2px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.draw-btn {
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  font-size: 14px;
+  position: relative;
+}
+.draw-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+.draw-btn.active { background: var(--green-d); color: var(--green-l); border-color: var(--green); }
+.draw-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 36px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  z-index: 999;
+  pointer-events: none;
+  font-family: var(--sans);
+}
+.draw-divider {
+  width: 20px; height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+.chart-wrap {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+#drawCanvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}
+#drawCanvas.drawing { pointer-events: all; cursor: crosshair; }
+.text-input-overlay {
+  display: none;
+  position: absolute;
+  z-index: 50;
+  background: var(--bg2);
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: var(--sans);
+  color: var(--text);
+  outline: none;
+  min-width: 120px;
+}
 .pair-btn {
   padding: 5px 12px;
   border-radius: 6px;
@@ -367,7 +445,7 @@ body {
   position: relative;
 }
 
-canvas#priceChart { width: 100% !important; height: 100% !important; }
+
 
 /* ── TRADE PANEL ── */
 .trade-panel {
@@ -772,13 +850,97 @@ canvas#priceChart { width: 100% !important; height: 100% !important; }
             <button class="pair-btn" onclick="switchPair('US30_USD', this)">Dow Jones</button>
           </div>
         </div>
-        <div class="price-display">
-          <div class="current-price" id="currentPrice">—</div>
-          <div class="price-change" id="priceChange"></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+          <div class="price-display">
+            <div class="current-price" id="currentPrice">—</div>
+            <div class="price-change" id="priceChange"></div>
+          </div>
+          <div style="display:flex;gap:4px;">
+            <button class="tf-btn active" onclick="switchTimeframe('M1',this)">M1</button>
+            <button class="tf-btn" onclick="switchTimeframe('M5',this)">M5</button>
+            <button class="tf-btn" onclick="switchTimeframe('M15',this)">M15</button>
+            <button class="tf-btn" onclick="switchTimeframe('M30',this)">M30</button>
+            <button class="tf-btn" onclick="switchTimeframe('H1',this)">H1</button>
+            <button class="tf-btn" onclick="switchTimeframe('H4',this)">H4</button>
+            <button class="tf-btn" onclick="switchTimeframe('D',this)">D</button>
+          </div>
         </div>
       </div>
-      <div class="chart-area">
-        <canvas id="priceChart"></canvas>
+      <div class="chart-area" style="display:flex;flex-direction:row;padding:0;overflow:hidden;">
+        <!-- Drawing toolbar -->
+        <div class="draw-toolbar" id="drawToolbar">
+          <button class="draw-btn active" id="btn-cursor"  onclick="setTool('cursor')"  title="Select / Pan">&#9654;</button>
+          <div class="draw-divider"></div>
+          <button class="draw-btn" id="btn-trendline"   onclick="setTool('trendline')"   title="Trend line">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><line x1="2" y1="14" x2="14" y2="2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <button class="draw-btn" id="btn-hline"       onclick="setTool('hline')"       title="Horizontal line">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><line x1="1" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="1" y1="8" x2="4" y2="5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="1" y1="8" x2="4" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </button>
+          <button class="draw-btn" id="btn-vline"       onclick="setTool('vline')"       title="Vertical line">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><line x1="8" y1="1" x2="8" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <button class="draw-btn" id="btn-ray"         onclick="setTool('ray')"         title="Ray (extended line)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><line x1="2" y1="12" x2="15" y2="4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="2" cy="12" r="1.5" fill="currentColor"/></svg>
+          </button>
+          <div class="draw-divider"></div>
+          <button class="draw-btn" id="btn-fib"         onclick="setTool('fib')"         title="Fibonacci retracement">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <line x1="2" y1="3"  x2="14" y2="3"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="2" y1="7"  x2="14" y2="7"  stroke="#1D9E75"      stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="2" y1="9"  x2="14" y2="9"  stroke="#1D9E75"      stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="2" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="2" y1="13" x2="14" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button class="draw-btn" id="btn-fibext"      onclick="setTool('fibext')"      title="Fibonacci extension">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <line x1="2" y1="2"  x2="14" y2="2"  stroke="#9FE1CB"      stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="2" y1="5"  x2="14" y2="5"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="2" y1="9"  x2="14" y2="9"  stroke="#1D9E75"      stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="2" y1="12" x2="14" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="2" y1="14" x2="14" y2="14" stroke="#9FE1CB"      stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <div class="draw-divider"></div>
+          <button class="draw-btn" id="btn-rect"        onclick="setTool('rect')"        title="Rectangle">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.8"/></svg>
+          </button>
+          <button class="draw-btn" id="btn-text"        onclick="setTool('text')"        title="Text label">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><text x="3" y="13" font-size="12" font-weight="700" fill="currentColor" font-family="serif">T</text></svg>
+          </button>
+          <div class="draw-divider"></div>
+          <button class="draw-btn" id="btn-long"  onclick="setTool('long')"  title="Long position" style="color:#1D9E75;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="6" width="14" height="8" rx="1" fill="rgba(29,158,117,0.15)" stroke="#1D9E75" stroke-width="1.2"/>
+              <line x1="1" y1="3" x2="15" y2="3" stroke="#1D9E75" stroke-width="1.5" stroke-dasharray="3,2"/>
+              <polyline points="8,1 8,5" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round"/>
+              <polyline points="5,3 8,0.5 11,3" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button class="draw-btn" id="btn-short" onclick="setTool('short')" title="Short position" style="color:#E24B4A;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="2" width="14" height="8" rx="1" fill="rgba(226,75,74,0.15)" stroke="#E24B4A" stroke-width="1.2"/>
+              <line x1="1" y1="13" x2="15" y2="13" stroke="#E24B4A" stroke-width="1.5" stroke-dasharray="3,2"/>
+              <polyline points="8,11 8,15" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round"/>
+              <polyline points="5,13 8,15.5 11,13" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="draw-divider"></div>
+          <button class="draw-btn" id="btn-undo"        onclick="undoDraw()"             title="Undo last drawing" style="color:var(--amber);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8 C3 5 6 3 9 3 C12 3 14 5 14 8 C14 11 12 13 9 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><polyline points="2,5 3,9 7,8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          </button>
+          <button class="draw-btn" id="btn-clear"       onclick="clearDrawings()"        title="Clear all drawings" style="color:var(--red-l);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><line x1="3" y1="3" x2="13" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="13" y1="3" x2="3" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <!-- Chart + canvas overlay -->
+        <div class="chart-wrap">
+          <div id="priceChart"></div>
+          <canvas id="drawCanvas"></canvas>
+          <input type="text" id="textInput" class="text-input-overlay" placeholder="Type label..." onkeydown="commitText(event)"/>
+        </div>
       </div>
     </div>
 
@@ -846,7 +1008,7 @@ canvas#priceChart { width: 100% !important; height: 100% !important; }
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 // ══════════════════════════════════════════
 // STATE
@@ -855,6 +1017,7 @@ let state = {
   apiKey: '', accountId: '', firm: 'ftmo',
   accountSize: 100000, phase: 1, totalDays: 30,
   currentPair: 'EUR_USD',
+  timeframe: 'M5',
   balance: 100000,
   equity: 100000,
   peakEquity: 100000,
@@ -870,7 +1033,8 @@ let state = {
   priceIntervals: {},
   connected: false,
   rules: {},
-  tradeCount: 0
+  tradeCount: 0,
+  lastCandle: null
 };
 
 // Firm rules config
@@ -977,6 +1141,7 @@ function startSimulation() {
   updateSessionInfo();
   initChart();
   initPrices();
+  setTimeout(() => { initDrawing(); attachChartDrawingSync(); }, 500);
 }
 
 function updateSessionInfo() {
@@ -1061,7 +1226,7 @@ function switchPair(pair, btn) {
   btn.classList.add('active');
   state.priceHistory = [];
   updatePriceDisplay();
-  updateChart();
+  loadCandles();
 }
 
 // ══════════════════════════════════════════
@@ -1096,59 +1261,197 @@ function updatePriceDisplay() {
 // ══════════════════════════════════════════
 // CHART
 // ══════════════════════════════════════════
+let candleSeries = null;
+let volumeSeries = null;
+
 function initChart() {
-  const ctx = document.getElementById('priceChart').getContext('2d');
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        data: [],
-        borderColor: '#1D9E75',
-        borderWidth: 1.5,
-        pointRadius: 0,
-        tension: 0.3,
-        fill: { target: 'origin', above: 'rgba(29,158,117,0.04)', below: 'rgba(226,75,74,0.04)' }
-      }]
+  const container = document.getElementById('priceChart');
+  container.innerHTML = '';
+  chart = LightweightCharts.createChart(container, {
+    width:  container.clientWidth,
+    height: container.clientHeight,
+    layout: {
+      background: { color: '#0a0f0d' },
+      textColor:  '#4a6657',
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: { duration: 200 },
-      interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { display: false }, tooltip: {
-        backgroundColor: '#172118',
-        borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
-        titleColor: '#6b8a7a',
-        bodyColor: '#f0f4f2',
-        callbacks: {
-          label: ctx => {
-            const dp = state.currentPair === 'USD_JPY' ? 3 : 5;
-            return ctx.parsed.y.toFixed(dp);
-          }
-        }
-      }},
-      scales: {
-        x: { display: false },
-        y: {
-          position: 'right',
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: {
-            color: '#4a6657', font: { family: "'JetBrains Mono'" , size: 11 },
-            callback: v => v.toFixed(getDP(state.currentPair))
-          }
+    grid: {
+      vertLines: { color: 'rgba(255,255,255,0.04)' },
+      horzLines: { color: 'rgba(255,255,255,0.04)' },
+    },
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Normal,
+      vertLine: { color: '#1D9E75', labelBackgroundColor: '#085041' },
+      horzLine: { color: '#1D9E75', labelBackgroundColor: '#085041' },
+    },
+    rightPriceScale: {
+      borderColor: 'rgba(255,255,255,0.08)',
+      textColor: '#4a6657',
+    },
+    timeScale: {
+      borderColor: 'rgba(255,255,255,0.08)',
+      textColor: '#4a6657',
+      timeVisible: true,
+      secondsVisible: false,
+    },
+    handleScroll: true,
+    handleScale: true,
+  });
+
+  candleSeries = chart.addCandlestickSeries({
+    upColor:          '#1D9E75',
+    downColor:        '#E24B4A',
+    borderUpColor:    '#1D9E75',
+    borderDownColor:  '#E24B4A',
+    wickUpColor:      '#1D9E75',
+    wickDownColor:    '#E24B4A',
+    priceFormat: {
+      type: 'price',
+      precision: getDP(state.currentPair),
+      minMove: Math.pow(10, -getDP(state.currentPair)),
+    },
+  });
+
+  volumeSeries = chart.addHistogramSeries({
+    priceFormat: { type: 'volume' },
+    priceScaleId: 'volume',
+    color: '#1D9E75',
+    scaleMargins: { top: 0.8, bottom: 0 },
+  });
+  chart.priceScale('volume').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+
+  window.addEventListener('resize', () => {
+    if (chart) chart.resize(container.clientWidth, container.clientHeight);
+  });
+
+  loadCandles();
+}
+
+async function loadCandles() {
+  const pair = state.currentPair;
+  const tf   = state.timeframe;
+  const countMap = { M1:120, M5:120, M15:100, M30:100, H1:100, H4:100, D:100 };
+  const count = countMap[tf] || 100;
+
+  // Try live OANDA candles via proxy
+  let candles = null;
+  if (state.apiKey) {
+    try {
+      const url = \`\${getProxyBase()}/api/candles?apiKey=\${encodeURIComponent(state.apiKey)}&instrument=\${pair}&granularity=\${tf}&count=\${count}\`;
+      const res  = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.candles && data.candles.length > 0) {
+          candles = data.candles
+            .filter(c => c.complete !== false || data.candles.indexOf(c) === data.candles.length - 1)
+            .map(c => ({
+              time:  Math.floor(new Date(c.time).getTime() / 1000),
+              open:  parseFloat(c.mid.o),
+              high:  parseFloat(c.mid.h),
+              low:   parseFloat(c.mid.l),
+              close: parseFloat(c.mid.c),
+              volume: parseInt(c.volume || 100),
+            }));
         }
       }
-    }
-  });
+    } catch(e) {}
+  }
+
+  // Fallback: generate realistic synthetic candles
+  if (!candles || candles.length === 0) {
+    candles = generateSyntheticCandles(pair, tf, count);
+  }
+
+  if (candleSeries) {
+    candleSeries.setData(candles);
+    // Update price format for this pair
+    candleSeries.applyOptions({
+      priceFormat: {
+        type: 'price',
+        precision: getDP(pair),
+        minMove: Math.pow(10, -getDP(pair)),
+      }
+    });
+  }
+  if (volumeSeries) {
+    volumeSeries.setData(candles.map(c => ({
+      time:  c.time,
+      value: c.volume,
+      color: c.close >= c.open ? 'rgba(29,158,117,0.4)' : 'rgba(226,75,74,0.3)',
+    })));
+  }
+  if (chart) chart.timeScale().fitContent();
+
+  // Store last candle for live tick updates
+  state.lastCandle = candles[candles.length - 1];
+  setTimeout(() => { redrawAll(); attachChartDrawingSync(); }, 100);
+}
+
+function generateSyntheticCandles(pair, tf, count) {
+  const seed = SEED_PRICES[pair] || 1.0;
+  const tfSeconds = { M1:60, M5:300, M15:900, M30:1800, H1:3600, H4:14400, D:86400 };
+  const interval  = tfSeconds[tf] || 300;
+  const volatility = {
+    EUR_USD:0.0008, GBP_USD:0.001, USD_JPY:0.08, AUD_USD:0.0008, USD_CAD:0.0008,
+    EUR_GBP:0.0006, GBP_JPY:0.12,  EUR_JPY:0.10, USD_CHF:0.0008, NZD_USD:0.0008,
+    AUD_JPY:0.09,   EUR_AUD:0.001,
+    XAU_USD:1.5,    XAG_USD:0.15,
+    SPX500_USD:8,   NAS100_USD:30,  UK100_GBP:15,
+    DE30_EUR:30,    JP225_USD:80,   US30_USD:60
+  };
+  const vol = volatility[pair] || 0.001;
+  const now = Math.floor(Date.now() / 1000 / interval) * interval;
+  let price = seed;
+  const candles = [];
+  for (let i = count; i >= 0; i--) {
+    const t = now - i * interval;
+    const open  = price;
+    const move  = (Math.random() - 0.48) * vol * 2;
+    const close = open + move;
+    const high  = Math.max(open, close) + Math.random() * vol * 0.8;
+    const low   = Math.min(open, close) - Math.random() * vol * 0.8;
+    candles.push({ time: t, open, high, low, close, volume: Math.floor(Math.random() * 500 + 100) });
+    price = close;
+  }
+  return candles;
 }
 
 function updateChart() {
-  if (!chart) return;
-  chart.data.labels = state.priceHistory.map((_, i) => i);
-  chart.data.datasets[0].data = state.priceHistory;
-  chart.update('none');
+  if (!candleSeries || !state.lastCandle) return;
+  const p = state.prices[state.currentPair];
+  if (!p) return;
+  const mid = (p.bid + p.ask) / 2;
+  const now = Math.floor(Date.now() / 1000);
+  const tfSeconds = { M1:60, M5:300, M15:900, M30:1800, H1:3600, H4:14400, D:86400 };
+  const interval  = tfSeconds[state.timeframe] || 300;
+  const candleTime = Math.floor(now / interval) * interval;
+
+  if (candleTime === state.lastCandle.time) {
+    // Update current candle
+    state.lastCandle.close = mid;
+    state.lastCandle.high  = Math.max(state.lastCandle.high, mid);
+    state.lastCandle.low   = Math.min(state.lastCandle.low,  mid);
+  } else {
+    // New candle
+    state.lastCandle = {
+      time: candleTime, open: mid, high: mid, low: mid, close: mid, volume: 1
+    };
+  }
+  state.lastCandle.volume = (state.lastCandle.volume || 0) + 1;
+  try {
+    candleSeries.update(state.lastCandle);
+    volumeSeries.update({
+      time:  state.lastCandle.time,
+      value: state.lastCandle.volume,
+      color: state.lastCandle.close >= state.lastCandle.open ? 'rgba(29,158,117,0.4)' : 'rgba(226,75,74,0.3)',
+    });
+  } catch(e) {}
+}
+
+function switchTimeframe(tf, btn) {
+  state.timeframe = tf;
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadCandles();
 }
 
 // ══════════════════════════════════════════
@@ -1380,6 +1683,7 @@ function retrySimulation() {
   updateSessionInfo();
   renderPositions();
   updateRulesBar();
+  if (candleSeries) loadCandles();
   priceUpdateInterval = setInterval(async () => {
     await refreshPrice(state.currentPair);
     updateOpenPositionsPnl();
@@ -1394,6 +1698,348 @@ function resetSimulation() {
   document.getElementById('breachAlert').classList.remove('show');
   document.getElementById('passAlert').classList.remove('show');
 }
+
+// ════════════════════════════════════════════════════
+// DRAWING ENGINE — Fibonacci, trendlines, text, shapes
+// ════════════════════════════════════════════════════
+const FIB_LEVELS     = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0];
+const FIB_EXT_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 1.0, 1.272, 1.414, 1.618, 2.0, 2.618];
+const FIB_COLORS     = { '0':'#9FE1CB','0.236':'#5DCAA5','0.382':'#1D9E75','0.5':'#ffffff','0.618':'#1D9E75','0.786':'#5DCAA5','1':'#9FE1CB' };
+
+let drawState = { tool:'cursor', drawings:[], drawing:false, start:null, current:null, pendingText:null };
+
+function setTool(tool) {
+  drawState.tool = tool;
+  document.querySelectorAll('.draw-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('btn-' + tool);
+  if (btn) btn.classList.add('active');
+  const canvas = document.getElementById('drawCanvas');
+  if (canvas) canvas.classList.toggle('drawing', tool !== 'cursor');
+}
+
+function getCanvas() { return document.getElementById('drawCanvas'); }
+function getCtx()    { const c = getCanvas(); return c ? c.getContext('2d') : null; }
+
+function syncCanvasSize() {
+  const canvas = getCanvas();
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  if (!wrap) return;
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+}
+
+function pixelToChartCoord(px, py) {
+  if (!chart || !candleSeries) return null;
+  try {
+    const price = candleSeries.coordinateToPrice(py);
+    const time  = chart.timeScale().coordinateToTime(px);
+    return { price, time };
+  } catch(e) { return null; }
+}
+
+function refreshCoord(stored) {
+  if (!stored) return null;
+  if (stored.time && stored.price !== undefined && candleSeries) {
+    try {
+      const px = chart.timeScale().timeToCoordinate(stored.time);
+      const py = candleSeries.priceToCoordinate(stored.price);
+      if (px !== null && py !== null) return { px, py };
+    } catch(e) {}
+  }
+  return { px: stored.px, py: stored.py };
+}
+
+function initDrawing() {
+  const canvas = getCanvas();
+  if (!canvas) return;
+  syncCanvasSize();
+  window.addEventListener('resize', () => { syncCanvasSize(); redrawAll(); });
+
+  canvas.addEventListener('mousedown', e => {
+    if (drawState.tool === 'cursor') return;
+    const rect  = canvas.getBoundingClientRect();
+    const px    = e.clientX - rect.left;
+    const py    = e.clientY - rect.top;
+    const coord = pixelToChartCoord(px, py);
+    if (!coord) return;
+
+    if (drawState.tool === 'text') {
+      const input = document.getElementById('textInput');
+      if (input) {
+        input.style.display = 'block';
+        input.style.left    = px + 'px';
+        input.style.top     = (py - 16) + 'px';
+        input.value = '';
+        input.focus();
+        drawState.pendingText = { px, py, price: coord.price, time: coord.time };
+      }
+      return;
+    }
+    drawState.drawing = true;
+    drawState.start   = { px, py, price: coord.price, time: coord.time };
+    drawState.current = { px, py, price: coord.price, time: coord.time };
+  });
+
+  canvas.addEventListener('mousemove', e => {
+    if (!drawState.drawing) return;
+    const rect  = canvas.getBoundingClientRect();
+    const px    = e.clientX - rect.left;
+    const py    = e.clientY - rect.top;
+    const coord = pixelToChartCoord(px, py);
+    if (!coord) return;
+    drawState.current = { px, py, price: coord.price, time: coord.time };
+    redrawAll();
+    drawShape(getCtx(), { tool: drawState.tool, start: drawState.start, end: drawState.current, preview: true });
+  });
+
+  canvas.addEventListener('mouseup', () => {
+    if (!drawState.drawing) return;
+    drawState.drawing = false;
+    if (!drawState.start || !drawState.current) return;
+    const dx = Math.abs(drawState.current.px - drawState.start.px);
+    const dy = Math.abs(drawState.current.py - drawState.start.py);
+    if (dx < 3 && dy < 3) return;
+    var drawing = { tool: drawState.tool, start: {...drawState.start}, end: {...drawState.current} };
+    if (drawState.tool === 'long' || drawState.tool === 'short') {
+      var lotEl = document.getElementById('lotSize');
+      drawing.lots = lotEl ? parseFloat(lotEl.value) || 0.1 : 0.1;
+      // SL = mirrored risk from entry
+      var risk = Math.abs(drawing.end.price - drawing.start.price);
+      drawing.sl = drawState.tool === 'long' ? drawing.start.price - risk : drawing.start.price + risk;
+    }
+    drawState.drawings.push(drawing);
+    redrawAll();
+    drawState.start   = null;
+    drawState.current = null;
+  });
+}
+
+function commitText(e) {
+  if (e.key !== 'Enter' && e.key !== 'Escape') return;
+  const input = document.getElementById('textInput');
+  if (!input) return;
+  if (e.key === 'Enter' && input.value.trim() && drawState.pendingText) {
+    drawState.drawings.push({ tool:'text', start:{...drawState.pendingText}, end:{...drawState.pendingText}, label: input.value.trim() });
+    redrawAll();
+  }
+  input.style.display = 'none';
+  input.value = '';
+  drawState.pendingText = null;
+}
+
+function undoDraw()     { drawState.drawings.pop(); redrawAll(); }
+function clearDrawings(){ drawState.drawings = []; redrawAll(); }
+
+function redrawAll() {
+  const canvas = getCanvas();
+  const ctx    = getCtx();
+  if (!canvas || !ctx) return;
+  syncCanvasSize();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawState.drawings.forEach(d => drawShape(ctx, d));
+}
+
+function drawShape(ctx, d) {
+  if (!ctx) return;
+  const canvas = getCanvas();
+  const s = refreshCoord(d.start);
+  const e = d.end ? refreshCoord(d.end) : null;
+  if (!s) return;
+
+  ctx.save();
+  ctx.lineWidth   = 1.5;
+  ctx.strokeStyle = '#1D9E75';
+  ctx.fillStyle   = 'rgba(29,158,117,0.08)';
+  ctx.font        = '11px "JetBrains Mono", monospace';
+  ctx.setLineDash([]);
+
+  switch (d.tool) {
+    case 'trendline':
+      ctx.beginPath();
+      ctx.moveTo(s.px, s.py);
+      ctx.lineTo(e ? e.px : s.px, e ? e.py : s.py);
+      ctx.stroke();
+      break;
+
+    case 'ray':
+      if (!e) break;
+      var dx = e.px - s.px, dy = e.py - s.py, len = Math.sqrt(dx*dx+dy*dy);
+      if (len < 1) break;
+      ctx.beginPath();
+      ctx.moveTo(s.px, s.py);
+      ctx.lineTo(s.px + dx/len*5000, s.py + dy/len*5000);
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(s.px, s.py, 3, 0, Math.PI*2);
+      ctx.fillStyle = '#1D9E75'; ctx.fill();
+      break;
+
+    case 'hline':
+      ctx.setLineDash([4,3]);
+      ctx.strokeStyle = 'rgba(159,225,203,0.7)';
+      ctx.beginPath(); ctx.moveTo(0, s.py); ctx.lineTo(canvas.width, s.py); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#085041';
+      ctx.fillRect(canvas.width - 72, s.py - 9, 70, 18);
+      ctx.fillStyle = '#9FE1CB'; ctx.textAlign = 'right';
+      if (d.start.price !== undefined) ctx.fillText(d.start.price.toFixed(getDP(state.currentPair)), canvas.width - 4, s.py + 4);
+      break;
+
+    case 'vline':
+      ctx.setLineDash([4,3]); ctx.strokeStyle = 'rgba(159,225,203,0.5)';
+      ctx.beginPath(); ctx.moveTo(s.px, 0); ctx.lineTo(s.px, canvas.height); ctx.stroke();
+      break;
+
+    case 'rect':
+      if (!e) break;
+      var x = Math.min(s.px,e.px), y = Math.min(s.py,e.py), w = Math.abs(e.px-s.px), h = Math.abs(e.py-s.py);
+      ctx.fillStyle   = e.py < s.py ? 'rgba(29,158,117,0.07)' : 'rgba(226,75,74,0.07)';
+      ctx.strokeStyle = e.py < s.py ? '#1D9E75' : '#E24B4A';
+      ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
+      break;
+
+    case 'text':
+      ctx.font = 'bold 13px Inter, sans-serif';
+      ctx.fillStyle = '#f0f4f2'; ctx.textAlign = 'left';
+      ctx.fillText(d.label || '', s.px, s.py);
+      break;
+
+    case 'long':
+    case 'short':
+      if (!e) break;
+      var isLong   = d.tool === 'long';
+      var entryP   = d.start.price;
+      var tpP      = d.end.price;
+      var riskPips = Math.abs(tpP - entryP);
+      var slP      = isLong ? entryP - riskPips : entryP + riskPips;
+
+      // override SL if stored
+      if (d.sl !== undefined) slP = d.sl;
+
+      var entryPy = candleSeries ? candleSeries.priceToCoordinate(entryP) : null;
+      var tpPy    = candleSeries ? candleSeries.priceToCoordinate(tpP)    : null;
+      var slPy    = candleSeries ? candleSeries.priceToCoordinate(slP)    : null;
+      if (entryPy === null || tpPy === null || slPy === null) break;
+
+      var x1 = Math.min(s.px, e.px);
+      var x2 = Math.max(s.px, e.px);
+      var w  = Math.max(x2 - x1, 80);
+
+      // TP zone (profit)
+      var tpTop  = Math.min(entryPy, tpPy);
+      var tpBot  = Math.max(entryPy, tpPy);
+      ctx.fillStyle = 'rgba(29,158,117,0.12)';
+      ctx.fillRect(x1, tpTop, w, tpBot - tpTop);
+
+      // SL zone (loss)
+      var slTop = Math.min(entryPy, slPy);
+      var slBot = Math.max(entryPy, slPy);
+      ctx.fillStyle = 'rgba(226,75,74,0.12)';
+      ctx.fillRect(x1, slTop, w, slBot - slTop);
+
+      // Entry line
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(x1, entryPy); ctx.lineTo(x1 + w, entryPy); ctx.stroke();
+
+      // TP line
+      ctx.strokeStyle = '#1D9E75';
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([3,2]);
+      ctx.beginPath(); ctx.moveTo(x1, tpPy); ctx.lineTo(x1 + w, tpPy); ctx.stroke();
+
+      // SL line
+      ctx.strokeStyle = '#E24B4A';
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([3,2]);
+      ctx.beginPath(); ctx.moveTo(x1, slPy); ctx.lineTo(x1 + w, slPy); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Direction arrow on entry line
+      ctx.strokeStyle = isLong ? '#1D9E75' : '#E24B4A';
+      ctx.fillStyle   = isLong ? '#1D9E75' : '#E24B4A';
+      ctx.lineWidth   = 2;
+      var arrowX = x1 + 12;
+      var arrowDir = isLong ? -6 : 6;
+      ctx.beginPath();
+      ctx.moveTo(arrowX, entryPy);
+      ctx.lineTo(arrowX, entryPy + arrowDir * 2.5);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(arrowX - 5, entryPy + arrowDir);
+      ctx.lineTo(arrowX, entryPy + (isLong ? -1 : 1));
+      ctx.lineTo(arrowX + 5, entryPy + arrowDir);
+      ctx.fill();
+
+      // Labels
+      ctx.font = 'bold 11px "JetBrains Mono", monospace';
+      var dp   = getDP(state.currentPair);
+      var lots = d.lots || 0.1;
+
+      // TP label
+      var tpRisk  = Math.abs(tpP - entryP);
+      var tpPnl   = (tpRisk / PIP_SIZE[state.currentPair]) * PIP_VALUE[state.currentPair] * lots * 100;
+      ctx.fillStyle = '#1D9E75';
+      ctx.textAlign = 'left';
+      ctx.fillRect(x1 + w - 110, tpPy - 18, 108, 16);
+      ctx.fillStyle = 'white';
+      ctx.fillText('TP ' + tpP.toFixed(dp) + '  +$' + tpPnl.toFixed(0), x1 + w - 108, tpPy - 5);
+
+      // SL label
+      var slRisk  = Math.abs(slP - entryP);
+      var slPnl   = (slRisk / PIP_SIZE[state.currentPair]) * PIP_VALUE[state.currentPair] * lots * 100;
+      ctx.fillStyle = '#E24B4A';
+      ctx.fillRect(x1 + w - 110, slPy + 2, 108, 16);
+      ctx.fillStyle = 'white';
+      ctx.fillText('SL ' + slP.toFixed(dp) + '  -$' + slPnl.toFixed(0), x1 + w - 108, slPy + 14);
+
+      // Entry label
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.fillRect(x1 + w - 110, entryPy - 9, 108, 16);
+      ctx.fillStyle = '#f0f4f2';
+      var rrRatio = tpRisk > 0 ? (tpRisk / slRisk).toFixed(1) : '—';
+      ctx.fillText((isLong ? 'LONG' : 'SHORT') + ' ' + entryP.toFixed(dp) + '  RR:' + rrRatio, x1 + w - 108, entryPy + 4);
+      break;
+
+    case 'fib':
+    case 'fibext':
+      if (!e) break;
+      var levels  = d.tool === 'fib' ? FIB_LEVELS : FIB_EXT_LEVELS;
+      var highP   = d.start.price > d.end.price ? d.start.price : d.end.price;
+      var lowP    = d.start.price < d.end.price ? d.start.price : d.end.price;
+      var totalP  = highP - lowP;
+      var x1      = Math.min(s.px, e.px);
+
+      levels.forEach(function(lvl) {
+        var price  = d.tool === 'fib' ? highP - totalP * lvl : highP + totalP * lvl;
+        var py     = candleSeries ? candleSeries.priceToCoordinate(price) : null;
+        if (py === null || py === undefined) return;
+        var colKey = String(lvl);
+        var col    = FIB_COLORS[colKey] || '#5DCAA5';
+        ctx.strokeStyle = col;
+        ctx.lineWidth   = (lvl === 0.618 || lvl === 0 || lvl === 1) ? 1.8 : 1;
+        ctx.setLineDash(lvl === 0.5 ? [4,3] : []);
+        ctx.beginPath(); ctx.moveTo(x1, py); ctx.lineTo(canvas.width, py); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = '10px "JetBrains Mono", monospace';
+        ctx.fillStyle = col; ctx.textAlign = 'left';
+        ctx.fillText((lvl*100).toFixed(1) + '%  ' + price.toFixed(getDP(state.currentPair)), x1 + 4, py - 3);
+      });
+
+      ctx.strokeStyle = 'rgba(159,225,203,0.25)';
+      ctx.lineWidth = 1; ctx.setLineDash([2,4]);
+      ctx.beginPath(); ctx.moveTo(x1, s.py); ctx.lineTo(x1, e.py); ctx.stroke();
+      break;
+  }
+  ctx.restore();
+}
+
+function attachChartDrawingSync() {
+  if (!chart) return;
+  chart.timeScale().subscribeVisibleTimeRangeChange(function() { redrawAll(); });
+}
+
 </script>
 </body>
 </html>
